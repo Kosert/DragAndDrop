@@ -108,7 +108,9 @@ private fun LazyItemScope.DraggableItem(
     onMove: (index1: Int, index2: Int) -> Unit,
     addItem: (item: String) -> Unit,
 ) {
-    val default = draggingObject.value.takeIf { it.dataToDrop == name }
+//    val default = draggingObject.value.takeIf { it.dataToDrop == name }
+    val fixedItemCount = 2 //fixme pass this as parameter
+
     var offsetY by remember { mutableStateOf(0f) }
     var isDragging by remember { mutableStateOf(false) }
     var currentPosition by remember { mutableStateOf(Offset.Zero) }
@@ -146,7 +148,7 @@ private fun LazyItemScope.DraggableItem(
                     val currentItemPosition = currentItem.offset + offsetY + margin
 
                     val hovered = lazyListState.layoutInfo.visibleItemsInfo
-                        .filterNot { it.index < 2 } //fixme
+                        .filterNot { it.index < fixedItemCount }
                         .filterNot { it.key == name }
                         .firstOrNull { currentItemPosition > it.offset && currentItemPosition < it.offsetEnd }
 
@@ -166,7 +168,10 @@ private fun LazyItemScope.DraggableItem(
                     }
                 },
                 onDragStarted = {
-//                    Log.d("XD", "drag start: $index")
+//                    if (index < fixedItemCount) {
+//                        addItem(name)
+//                    }
+
                     isDragging = true
                     draggingObject.value.index = index
                     draggingObject.value.dataToDrop = name
