@@ -61,6 +61,7 @@ class Classic2Activity : AppCompatActivity() {
                     // it solves this case:
                     // Item, Item, Item, Item, Placeholder, Placeholder, Placeholder, Placeholder, Header
                     // Swap Item with Header and all placeholders are incorrectly moved after header
+                    //todo restrict only [droppableSlots] Item elements allowed before Header
                     if (from > to) {
                         (from downTo to + 1).forEach {
                             Log.d("XD", "$it -> ${it - 1}")
