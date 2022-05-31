@@ -56,14 +56,6 @@ class MainAdapter(
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bindView(item: Item.PlaceholderItem) {
-            //binding.root.visibility = if (item.visible) View.INVISIBLE else View.GONE
-//            binding.root.isVisible = item.visible
-//            if (item.visible) {
-//                this.itemView.setBackgroundColor(this.itemView.context.getColor(R.color.purple_200))
-//            } else {
-//                this.itemView.setBackgroundColor(Color.TRANSPARENT)
-//            }
-
             this.itemView.isVisible = item.visible
             this.itemView.layoutParams = if (item.visible) {
                 val height = this.itemView.context.resources.getDimensionPixelSize(R.dimen.itemHeight)

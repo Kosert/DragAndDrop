@@ -5,4 +5,4 @@
     android:layout_height="48dp"
     android:gravity="end|center_vertical"
     android:orientation="vertical"
-    android:text="Placeholder"/>
+    android:text=""/>
