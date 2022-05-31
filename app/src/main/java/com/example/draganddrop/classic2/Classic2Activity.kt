@@ -3,16 +3,11 @@ package com.example.draganddrop.classic2
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.util.rangeTo
-import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.draganddrop.classic.splitAt
-import com.example.draganddrop.classic.swap
 import com.example.draganddrop.classic.viewBinding
 import com.example.draganddrop.databinding.ActivityClassic2Binding
-import kotlin.math.abs
 
 class Classic2Activity : AppCompatActivity() {
 
@@ -24,20 +19,18 @@ class Classic2Activity : AppCompatActivity() {
     private val items = mutableListOf<Item>(
         *Array(droppableSlots) { Item.PlaceholderItem() },
         Item.Header(),
-        Item.SortableItem("Jeden"),
-        Item.SortableItem("Dwa"),
-        Item.SortableItem("Trzy"),
-        Item.SortableItem("Cztery"),
-        Item.SortableItem("Pięć"),
-        Item.SortableItem("Sześć"),
+        Item.SortableItem("First"),
+        Item.SortableItem("Second"),
+        Item.SortableItem("Third"),
+        Item.SortableItem("Fourth"),
+        Item.SortableItem("Fifth"),
+        Item.SortableItem("Sixth"),
+        Item.SortableItem("Seventh"),
     )
 
     private val itemTouchHelper by lazy {
         val simpleItemTouchCallback =
             object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {
-
-                private var draggingHolder: MainAdapter.ItemViewHolder? = null
-                private var hoveredHolder: RecyclerView.ViewHolder? = null
 
                 override fun isLongPressDragEnabled(): Boolean = false
                 override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) = Unit
@@ -48,32 +41,24 @@ class Classic2Activity : AppCompatActivity() {
                     viewHolder: RecyclerView.ViewHolder,
                     target: RecyclerView.ViewHolder
                 ): Boolean {
-                    //only item type can be grabbed
-                    draggingHolder = viewHolder as MainAdapter.ItemViewHolder
-                    hoveredHolder = target
-
                     val from = viewHolder.bindingAdapterPosition
                     val to = target.bindingAdapterPosition
-
                     Log.d("XD", "Swap: $from - ${items[from]} -> $to ${items[to]}")
-                    // swap all items in between
-                    // i.e.: 3 -> 6 should swap: 3 <-> 4, 4 <-> 5, 5 <-> 6
-                    // it solves this case:
-                    // Item, Item, Item, Item, Placeholder, Placeholder, Placeholder, Placeholder, Header
-                    // Swap Item with Header and all placeholders are incorrectly moved after header
-                    //todo restrict only [droppableSlots] Item elements allowed before Header
-                    if (from > to) {
-                        (from downTo to + 1).forEach {
-                            Log.d("XD", "$it -> ${it - 1}")
-                            items.swap(it, it - 1)
-                            adapter.notifyItemMoved(it, it - 1)
-                        }
-                    } else {
-                        (from until to).forEach {
-                            Log.d("XD", "$it -> ${it + 1}")
-                            items.swap(it, it + 1)
-                            adapter.notifyItemMoved(it, it + 1)
-                        }
+
+                    // check if after moving there will be max [droppableSlots] SortableItems before HeaderItem
+                    val isIllegal = with(items.toMutableList()) {
+                        this.move(from, to)
+                        val headerIndex = this.indexOfFirst { it is Item.Header }
+                        this.subList(0, headerIndex)
+                            .count { it is Item.SortableItem } > droppableSlots
+                    }
+                    if (isIllegal) {
+                        Log.d("XD", "This swap tries to exceed max droppable items")
+                        return false
+                    }
+
+                    items.move(from, to) { index1, index2 ->
+                        adapter.notifyItemMoved(index1, index2)
                     }
 
                     when (target) {
@@ -94,25 +79,30 @@ class Classic2Activity : AppCompatActivity() {
 
                     Log.d("XD", "Items: $items")
                     while (headerIndex() > droppableSlots) {
-                        val firstIndex = items.indexOfFirst { it is Item.PlaceholderItem && it.visible }
+                        val firstIndex =
+                            items.indexOfFirst { it is Item.PlaceholderItem && it.visible }
 //                        if (firstIndex == -1) {
 //                            Log.d("XD", "REMOVING PLACEHOLDER: INDEX OF FIRST $firstIndex")
 //                            break
 //                        }
+                        // hide and show instead of removing from list as remove/add
+                        // resulted in notifying about collection change and drag was
+                        // interrupted by adapter update
                         (items[firstIndex] as Item.PlaceholderItem).visible = false
                         Log.d("XD", "removing placeholder")
                         adapter.notifyItemChanged(firstIndex)
                     }
 
                     while (headerIndex() < droppableSlots) {
-                        val firstIndex = items.indexOfFirst { it is Item.PlaceholderItem && !it.visible }
+                        val firstIndex =
+                            items.indexOfFirst { it is Item.PlaceholderItem && !it.visible }
 //                        if (firstIndex == -1) {
 //                            Log.d("XD", "ADDING PLACEHOLDER: INDEX OF FIRST $firstIndex")
 //                            break
 //                        }
                         (items[firstIndex] as Item.PlaceholderItem).visible = true
                         Log.d("XD", "adding placeholder $firstIndex")
-                        //fixme for some reason one item notify doesn't work properly
+                        //fixme for some reason one item notify doesn't work properly (maybe investigate in future?)
 //                        adapter.notifyItemChanged(firstIndex)
                         adapter.notifyItemRangeChanged(0, droppableSlots)
                     }
@@ -139,27 +129,18 @@ class Classic2Activity : AppCompatActivity() {
                     viewHolder.itemView.alpha = 1f
 
                     Log.d("XD", "Before $items")
-//                    val headerIndex = items.indexOfFirst { it is Item.Header }
-//                    val (beforeHeader, rest) = items.splitAt(headerIndex)
-//                    val sorted = beforeHeader.sortedBy { it.type.viewType }
-//                    val newList = sorted + rest
-//                    Log.d("XD", "After: $newList")
-
                     val placeholders = items.filter { it is Item.PlaceholderItem }
                     val newList = items
                         .filterNot { it is Item.PlaceholderItem }
                         .toMutableList()
                     val headerIndex = newList.indexOfFirst { it is Item.Header }
                     newList.addAll(headerIndex, placeholders)
-
                     Log.d("XD", "After: $newList")
+
                     items.clear()
                     items.addAll(newList)
                     //todo with move animation
-                    recyclerView.adapter?.notifyDataSetChanged()//0, headerIndex)
-
-                    draggingHolder = null
-                    hoveredHolder = null
+                    adapter.notifyDataSetChanged()
                 }
             }
 
